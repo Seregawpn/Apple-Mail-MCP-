@@ -1,0 +1,2 @@
+"""Apple Mail bridge prototype."""
+
