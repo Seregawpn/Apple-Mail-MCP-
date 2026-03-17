@@ -1,35 +1,35 @@
-# Apple Mail folder
+# Apple Mail MCP
 
-Изолированный sandbox для прототипа интеграции с Apple Mail.
+Isolated sandbox for a local Apple Mail integration prototype.
 
-Цель:
-- не входить в `client/`
-- не входить в `server/`
-- проверить локальный bridge к `Mail.app` на macOS
+Goals:
+- stay out of `client/`
+- stay out of `server/`
+- validate a local bridge to `Mail.app` on macOS
 
 Source of Truth:
 - `Mail.app`
-- уже подключенные в нем почтовые аккаунты
+- mail accounts already connected inside Apple Mail
 
-Упрощенная архитектура:
+Simplified architecture:
 
 - `service.py`
-  - единственный owner mail-логики
-  - здесь чинить `read/send/resolve/preflight`
+  - single owner of mail domain logic
+  - fix `read/send/resolve/preflight` here
 - `scripts.py`
-  - единственный owner AppleScript команд
-  - здесь чинить locators и Mail.app selectors
+  - single owner of AppleScript commands
+  - fix locators and Mail.app selectors here
 - `api_contract.py`
-  - единственный owner JSON envelope
-  - здесь чинить внешние `status/message/error`
+  - single owner of the JSON envelope
+  - fix external `status/message/error` shape here
 - `cli.py`
   - thin boundary only
-  - здесь не должна жить mail-бизнес-логика
+  - mail business logic must not live here
 
-Правило для быстрых исправлений:
-- если сломалось действие Mail.app -> сначала `service.py`, потом `scripts.py`
-- если сломался JSON ответ -> только `api_contract.py`
-- если сломалась команда запуска -> только `cli.py`
+Fast-fix rule:
+- if a Mail.app action is broken, start with `service.py`, then `scripts.py`
+- if the JSON response is broken, fix only `api_contract.py`
+- if the CLI command is broken, fix only `cli.py`
 
 JSON API envelope:
 
@@ -43,11 +43,11 @@ JSON API envelope:
 }
 ```
 
-Правила:
-- `success=true` только для terminal-success состояний
-- `success=false` для `error`, `not_found`, `ambiguous`, `not_ready`
-- доменные данные всегда лежат в `data`
-- детали ошибки всегда лежат в `error`
+Rules:
+- `success=true` only for terminal success states
+- `success=false` for `error`, `not_found`, `ambiguous`, `not_ready`
+- domain data must always live in `data`
+- error details must always live in `error`
 
 Email command contract:
 
@@ -63,25 +63,25 @@ Email command contract:
 - `limit`
 - `scanLimit`
 
-Текущий объем MVP:
-- список аккаунтов
-- список ящиков
-- поиск писем
-- чтение письма по id
-- создание черновика
-- просмотр черновиков
-- отправка существующего черновика по id
-- поиск получателя по истории email
+Current MVP scope:
+- list accounts
+- list mailboxes
+- search messages
+- read a message by id
+- create a draft
+- list drafts
+- send an existing draft by id
+- resolve a recipient from email history
 
-Не входит в первый этап:
-- автоматическая отправка без подтверждения
-- backend/API интеграция вне локальной машины
-- хранение токенов, паролей и учетных данных
+Out of scope for phase one:
+- automatic sending without confirmation
+- backend/API integration outside the local machine
+- storing tokens, passwords, or credentials
 
-Запуск:
+Run:
 
 ```bash
-cd "Apple Mail folder"
+cd Apple-Mail-MCP
 python3 -m apple_mail_bridge.cli accounts
 python3 -m apple_mail_bridge.cli mailboxes
 python3 -m apple_mail_bridge.cli account-mailboxes
@@ -102,14 +102,14 @@ python3 -m apple_mail_bridge.cli list-drafts --limit 5
 python3 -m apple_mail_bridge.cli send-draft --draft-id "<draft-id>"
 ```
 
-Подготовка окружения:
+Environment setup:
 
 ```bash
-cd "Apple Mail folder"
+cd Apple-Mail-MCP
 PYTHONPATH=src python3 -m apple_mail_bridge.cli accounts
 ```
 
-Рекомендуемый write-flow:
+Recommended write flow:
 
 ```bash
 PYTHONPATH=src python3 -m apple_mail_bridge.cli create-draft --to test@example.com --subject "Test" --body "Hello"
@@ -117,14 +117,14 @@ PYTHONPATH=src python3 -m apple_mail_bridge.cli list-drafts --limit 5
 PYTHONPATH=src python3 -m apple_mail_bridge.cli send-draft --draft-id "<draft-id>"
 ```
 
-Рекомендуемый recipient-flow:
+Recommended recipient flow:
 
 ```bash
 PYTHONPATH=src python3 -m apple_mail_bridge.cli find-recipient --mode quick --query "John Smith"
 PYTHONPATH=src python3 -m apple_mail_bridge.cli create-draft-for-recipient --mode quick --query "John Smith" --subject "Test" --body "Hello"
 ```
 
-Рекомендуемый быстрый flow:
+Recommended quick flow:
 
 ```bash
 PYTHONPATH=src python3 -m apple_mail_bridge.cli preflight-health
